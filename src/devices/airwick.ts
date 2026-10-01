@@ -253,7 +253,7 @@ function dynamicEndpoint(entity: Zh.Endpoint | Zh.Group): DynamicEndpoint {
 }
 
 const tzAirwick: Tz.Converter = {
-    key: ["auto_interval_min", "spray_duration_ms", "timezone_hours", ...programKeys, "reset_counter"],
+    key: ["auto_interval_min", "spray_duration_ms", "timezone_hours", ...programKeys],
     convertSet: async (entity, key, value, meta) => {
         if (key === "spray_duration_ms") {
             const n = Number(value);
@@ -274,10 +274,6 @@ const tzAirwick: Tz.Converter = {
             return {state: {timezone_hours: hours}};
         }
 
-        if (key === "reset_counter") {
-            await dynamicEndpoint(entity).write(CLUSTER, {resetCounter: true});
-            return {state: {reset_counter: null, spray_count: 0}};
-        }
 
         const match = /^program_(mon|tue|wed|thu|fri|sat|sun)_(enabled|start|end|interval_min)$/.exec(key);
         if (match) {
@@ -325,6 +321,14 @@ const tzAirwick: Tz.Converter = {
                         : `program${n}IntervalMin`;
             await dynamicEndpoint(entity).read(CLUSTER, [attr]);
         }
+    },
+};
+
+const tzResetCounter: Tz.Converter = {
+    key: ["reset_counter"],
+    convertSet: async (entity) => {
+        await dynamicEndpoint(entity).write(CLUSTER, {resetCounter: true});
+        return {state: {reset_counter: null, spray_count: 0}};
     },
 };
 
@@ -530,7 +534,7 @@ function withoutExposes(extend: ModernExtend): ModernExtend {
 function airwickFeatures(): ModernExtend {
     return {
         fromZigbee: [fzAirwick],
-        toZigbee: [tzAirwick, tzSpray, readOnlyGet],
+        toZigbee: [tzAirwick, tzResetCounter, tzSpray, readOnlyGet],
         exposes: ui,
         configure: [configure],
         onEvent: [onEvent],
