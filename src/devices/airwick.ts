@@ -22,36 +22,61 @@ const DAYS = [
     {key: "sun", label: "Воскресенье"},
 ] as const;
 
-const attrs: Record<string, {name: string; ID: number; type: Zcl.DataType; write?: boolean; min?: number; max?: number}> = {
+const attrs = {
     mode: {name: "mode", ID: 0x0000, type: Zcl.DataType.ENUM8, write: true, max: 3},
     autoIntervalMin: {name: "autoIntervalMin", ID: 0x0001, type: Zcl.DataType.UINT16, write: true, max: 1440},
-    scheduleDays: {name: "scheduleDays", ID: 0x0002, type: Zcl.DataType.UINT8, write: true, max: 0x7f},
+    scheduleDays: {name: "scheduleDays", ID: 0x0002, type: Zcl.DataType.UINT8, write: true, max: 127},
     scheduleStartMin: {name: "scheduleStartMin", ID: 0x0003, type: Zcl.DataType.UINT16, write: true, max: 1439},
     scheduleEndMin: {name: "scheduleEndMin", ID: 0x0004, type: Zcl.DataType.UINT16, write: true, max: 1439},
     scheduleIntervalMin: {name: "scheduleIntervalMin", ID: 0x0005, type: Zcl.DataType.UINT16, write: true, max: 1440},
     timezoneMin: {name: "timezoneMin", ID: 0x0006, type: Zcl.DataType.INT16, write: true, min: -720, max: 840},
-    sprayCount: {name: "sprayCount", ID: 0x0007, type: Zcl.DataType.UINT32, max: 0xffffffff},
+    sprayCount: {name: "sprayCount", ID: 0x0007, type: Zcl.DataType.UINT32, max: 4294967295},
     lastSprayReason: {name: "lastSprayReason", ID: 0x0008, type: Zcl.DataType.UINT8, max: 5},
-    lastSprayTime: {name: "lastSprayTime", ID: 0x0009, type: Zcl.DataType.UTC, max: 0xfffffffe},
-    nextSprayTime: {name: "nextSprayTime", ID: 0x000a, type: Zcl.DataType.UTC, max: 0xfffffffe},
+    lastSprayTime: {name: "lastSprayTime", ID: 0x0009, type: Zcl.DataType.UTC, max: 4294967294},
+    nextSprayTime: {name: "nextSprayTime", ID: 0x000a, type: Zcl.DataType.UTC, max: 4294967294},
     timeValid: {name: "timeValid", ID: 0x000b, type: Zcl.DataType.BOOLEAN},
-    physicalMode: {name: "physicalMode", ID: 0x000d, type: Zcl.DataType.UINT8, max: 0xff},
+    physicalMode: {name: "physicalMode", ID: 0x000d, type: Zcl.DataType.UINT8, max: 255},
     resetCounter: {name: "resetCounter", ID: 0x000e, type: Zcl.DataType.BOOLEAN, write: true},
-    settingsVersion: {name: "settingsVersion", ID: 0x000f, type: Zcl.DataType.UINT8, max: 0xff},
-    syncTime: {name: "syncTime", ID: 0x0010, type: Zcl.DataType.UINT32, write: true, max: 0xfffffffe},
-    batteryMv: {name: "batteryMv", ID: 0x0011, type: Zcl.DataType.UINT16, max: 0xffff},
+    settingsVersion: {name: "settingsVersion", ID: 0x000f, type: Zcl.DataType.UINT8, max: 255},
+    syncTime: {name: "syncTime", ID: 0x0010, type: Zcl.DataType.UINT32, write: true, max: 4294967294},
+    batteryMv: {name: "batteryMv", ID: 0x0011, type: Zcl.DataType.UINT16, max: 65535},
     sprayDurationMs: {name: "sprayDurationMs", ID: 0x0012, type: Zcl.DataType.UINT16, write: true, min: 300, max: 1000},
-};
-
-for (let slot = 0; slot < 7; slot++) {
-    const n = slot + 1;
-    const base = 0x0020 + slot * 8;
-    attrs[`program${n}Enabled`] = {name: `program${n}Enabled`, ID: base, type: Zcl.DataType.BOOLEAN, write: true};
-    attrs[`program${n}Days`] = {name: `program${n}Days`, ID: base + 1, type: Zcl.DataType.UINT8, write: true, max: 0x7f};
-    attrs[`program${n}StartMin`] = {name: `program${n}StartMin`, ID: base + 2, type: Zcl.DataType.UINT16, write: true, max: 1439};
-    attrs[`program${n}EndMin`] = {name: `program${n}EndMin`, ID: base + 3, type: Zcl.DataType.UINT16, write: true, max: 1439};
-    attrs[`program${n}IntervalMin`] = {name: `program${n}IntervalMin`, ID: base + 4, type: Zcl.DataType.UINT16, write: true, max: 1440};
-}
+    program1Enabled: {name: "program1Enabled", ID: 0x0020, type: Zcl.DataType.BOOLEAN, write: true},
+    program1Days: {name: "program1Days", ID: 0x0021, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program1StartMin: {name: "program1StartMin", ID: 0x0022, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program1EndMin: {name: "program1EndMin", ID: 0x0023, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program1IntervalMin: {name: "program1IntervalMin", ID: 0x0024, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program2Enabled: {name: "program2Enabled", ID: 0x0028, type: Zcl.DataType.BOOLEAN, write: true},
+    program2Days: {name: "program2Days", ID: 0x0029, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program2StartMin: {name: "program2StartMin", ID: 0x002a, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program2EndMin: {name: "program2EndMin", ID: 0x002b, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program2IntervalMin: {name: "program2IntervalMin", ID: 0x002c, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program3Enabled: {name: "program3Enabled", ID: 0x0030, type: Zcl.DataType.BOOLEAN, write: true},
+    program3Days: {name: "program3Days", ID: 0x0031, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program3StartMin: {name: "program3StartMin", ID: 0x0032, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program3EndMin: {name: "program3EndMin", ID: 0x0033, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program3IntervalMin: {name: "program3IntervalMin", ID: 0x0034, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program4Enabled: {name: "program4Enabled", ID: 0x0038, type: Zcl.DataType.BOOLEAN, write: true},
+    program4Days: {name: "program4Days", ID: 0x0039, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program4StartMin: {name: "program4StartMin", ID: 0x003a, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program4EndMin: {name: "program4EndMin", ID: 0x003b, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program4IntervalMin: {name: "program4IntervalMin", ID: 0x003c, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program5Enabled: {name: "program5Enabled", ID: 0x0040, type: Zcl.DataType.BOOLEAN, write: true},
+    program5Days: {name: "program5Days", ID: 0x0041, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program5StartMin: {name: "program5StartMin", ID: 0x0042, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program5EndMin: {name: "program5EndMin", ID: 0x0043, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program5IntervalMin: {name: "program5IntervalMin", ID: 0x0044, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program6Enabled: {name: "program6Enabled", ID: 0x0048, type: Zcl.DataType.BOOLEAN, write: true},
+    program6Days: {name: "program6Days", ID: 0x0049, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program6StartMin: {name: "program6StartMin", ID: 0x004a, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program6EndMin: {name: "program6EndMin", ID: 0x004b, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program6IntervalMin: {name: "program6IntervalMin", ID: 0x004c, type: Zcl.DataType.UINT16, write: true, max: 1440},
+    program7Enabled: {name: "program7Enabled", ID: 0x0050, type: Zcl.DataType.BOOLEAN, write: true},
+    program7Days: {name: "program7Days", ID: 0x0051, type: Zcl.DataType.UINT8, write: true, max: 127},
+    program7StartMin: {name: "program7StartMin", ID: 0x0052, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program7EndMin: {name: "program7EndMin", ID: 0x0053, type: Zcl.DataType.UINT16, write: true, max: 1439},
+    program7IntervalMin: {name: "program7IntervalMin", ID: 0x0054, type: Zcl.DataType.UINT16, write: true, max: 1440},
+} as const;
 
 const customCluster = m.deviceAddCustomCluster(CLUSTER, {
     name: CLUSTER,
