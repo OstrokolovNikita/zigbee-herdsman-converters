@@ -242,7 +242,6 @@ for (const day of DAYS) {
     programKeys.push(`program_${day.key}_enabled`, `program_${day.key}_start`, `program_${day.key}_end`, `program_${day.key}_interval_min`);
 }
 
-
 type DynamicEndpoint = {
     write: (cluster: string, attributes: Record<string, unknown>) => Promise<unknown>;
     read: (cluster: string, attributes: string[]) => Promise<unknown>;
@@ -355,8 +354,14 @@ const readOnlyGet: Tz.Converter = {
 };
 
 const ui: Expose[] = [
-    e.enum("spray", ea.SET, ["РАСПЫЛИТЬ"]).withLabel("Распылить").withDescription("Одно нажатие — одно распыление. Элемент не имеет фиксированного состояния."),
-    e.enum("mode", ea.STATE_GET, [...MODE_NAMES]).withLabel("Режим").withDescription("Текущий режим, задаваемый физическим переключателем."),
+    e
+        .enum("spray", ea.SET, ["РАСПЫЛИТЬ"])
+        .withLabel("Распылить")
+        .withDescription("Одно нажатие — одно распыление. Элемент не имеет фиксированного состояния."),
+    e
+        .enum("mode", ea.STATE_GET, [...MODE_NAMES])
+        .withLabel("Режим")
+        .withDescription("Текущий режим, задаваемый физическим переключателем."),
     e.numeric("battery_v", ea.STATE_GET).withLabel("Напряжение аккумулятора").withUnit("V").withValueStep(0.001),
     e.numeric("battery", ea.STATE_GET).withLabel("Заряд аккумулятора").withUnit("%").withValueMin(0).withValueMax(100).withValueStep(0.5),
     e
@@ -405,7 +410,10 @@ ui.push(
         .withCategory("config"),
     e.numeric("spray_count", ea.STATE_GET).withLabel("Счётчик распылений").withValueMin(0),
     e.enum("reset_counter", ea.SET, ["СБРОСИТЬ"]).withLabel("Сбросить счётчик").withCategory("config"),
-    e.enum("last_spray_reason", ea.STATE_GET, [...REASON_NAMES]).withLabel("Причина последнего распыления").withCategory("diagnostic"),
+    e
+        .enum("last_spray_reason", ea.STATE_GET, [...REASON_NAMES])
+        .withLabel("Причина последнего распыления")
+        .withCategory("diagnostic"),
     e.text("last_spray_time", ea.STATE_GET).withLabel("Последнее распыление").withCategory("diagnostic"),
     e.text("next_spray_time", ea.STATE_GET).withLabel("Следующее распыление").withCategory("diagnostic"),
     e.binary("time_valid", ea.STATE_GET, "ON", "OFF").withLabel("Время синхронизировано").withCategory("diagnostic"),
@@ -451,13 +459,13 @@ async function configureReliableReporting(endpoint: Zh.Endpoint): Promise<void> 
 
     for (const attribute of ["sprayCount", "lastSprayReason", "lastSprayTime", "nextSprayTime"]) {
         await retry(() =>
-            dynamicEndpoint(endpoint).configureReporting(CLUSTER, [{attribute, minimumReportInterval: 0, maximumReportInterval: 3600, reportableChange: 1}]),
+            dynamicEndpoint(endpoint).configureReporting(CLUSTER, [
+                {attribute, minimumReportInterval: 0, maximumReportInterval: 3600, reportableChange: 1},
+            ]),
         );
     }
 
-    await retry(() =>
-        endpoint.configureReporting("genOnOff", [{attribute: "onOff", minimumReportInterval: 0, maximumReportInterval: 3600}]),
-    );
+    await retry(() => endpoint.configureReporting("genOnOff", [{attribute: "onOff", minimumReportInterval: 0, maximumReportInterval: 3600}]));
 }
 
 async function refreshState(device: Zh.Device): Promise<void> {
