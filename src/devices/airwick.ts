@@ -274,7 +274,6 @@ const tzAirwick: Tz.Converter = {
             return {state: {timezone_hours: hours}};
         }
 
-
         const match = /^program_(mon|tue|wed|thu|fri|sat|sun)_(enabled|start|end|interval_min)$/.exec(key);
         if (match) {
             const slot = DAYS.findIndex((day) => day.key === match[1]);
