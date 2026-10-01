@@ -1,3 +1,4 @@
+// AirWick nRF52840 native Zigbee2MQTT support.
 import {Zcl} from "zigbee-herdsman";
 
 import * as exposes from "../lib/exposes";
