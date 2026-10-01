@@ -217,30 +217,41 @@ for (const day of DAYS) {
     programKeys.push(`program_${day.key}_enabled`, `program_${day.key}_start`, `program_${day.key}_end`, `program_${day.key}_interval_min`);
 }
 
+
+type DynamicEndpoint = {
+    write: (cluster: string, attributes: Record<string, unknown>) => Promise<unknown>;
+    read: (cluster: string, attributes: string[]) => Promise<unknown>;
+    configureReporting: (cluster: string, items: Array<Record<string, unknown>>) => Promise<unknown>;
+};
+
+function dynamicEndpoint(entity: Zh.Endpoint | Zh.Group): DynamicEndpoint {
+    return entity as unknown as DynamicEndpoint;
+}
+
 const tzAirwick: Tz.Converter = {
     key: ["auto_interval_min", "spray_duration_ms", "timezone_hours", ...programKeys, "reset_counter"],
     convertSet: async (entity, key, value, meta) => {
         if (key === "spray_duration_ms") {
             const n = Number(value);
             if (!Number.isInteger(n) || n < 300 || n > 1000) throw new Error("Длительность должна быть 300–1000 мс");
-            await entity.write(CLUSTER, {sprayDurationMs: n});
+            await dynamicEndpoint(entity).write(CLUSTER, {sprayDurationMs: n});
             return {state: {spray_duration_ms: n}};
         }
 
         if (key === "auto_interval_min") {
             const n = Number(value);
-            await entity.write(CLUSTER, {autoIntervalMin: n});
+            await dynamicEndpoint(entity).write(CLUSTER, {autoIntervalMin: n});
             return {state: {auto_interval_min: n}};
         }
 
         if (key === "timezone_hours") {
             const hours = Number(value);
-            await entity.write(CLUSTER, {timezoneMin: Math.round(hours * 60)});
+            await dynamicEndpoint(entity).write(CLUSTER, {timezoneMin: Math.round(hours * 60)});
             return {state: {timezone_hours: hours}};
         }
 
         if (key === "reset_counter") {
-            await entity.write(CLUSTER, {resetCounter: true});
+            await dynamicEndpoint(entity).write(CLUSTER, {resetCounter: true});
             return {state: {reset_counter: null, spray_count: 0}};
         }
 
@@ -252,28 +263,28 @@ const tzAirwick: Tz.Converter = {
 
             if (field === "enabled") {
                 const on = value === "ON" || value === true || value === 1;
-                await entity.write(CLUSTER, {[`program${n}Enabled`]: on});
+                await dynamicEndpoint(entity).write(CLUSTER, {[`program${n}Enabled`]: on});
                 return {state: {[key]: on ? "ON" : "OFF"}};
             }
 
             if (field === "start" || field === "end") {
                 const minutes = timeToMinutes(value);
                 const attr = `program${n}${field === "start" ? "StartMin" : "EndMin"}`;
-                await entity.write(CLUSTER, {[attr]: minutes});
+                await dynamicEndpoint(entity).write(CLUSTER, {[attr]: minutes});
                 return {state: {[key]: minutesToTime(minutes)}};
             }
 
             if (field === "interval_min") {
                 const minutes = Number(value);
-                await entity.write(CLUSTER, {[`program${n}IntervalMin`]: minutes});
+                await dynamicEndpoint(entity).write(CLUSTER, {[`program${n}IntervalMin`]: minutes});
                 return {state: {[key]: minutes}};
             }
         }
     },
     convertGet: async (entity, key, meta) => {
-        if (key === "spray_duration_ms") return entity.read(CLUSTER, ["sprayDurationMs"]);
-        if (key === "auto_interval_min") return entity.read(CLUSTER, ["autoIntervalMin"]);
-        if (key === "timezone_hours") return entity.read(CLUSTER, ["timezoneMin"]);
+        if (key === "spray_duration_ms") return dynamicEndpoint(entity).read(CLUSTER, ["sprayDurationMs"]);
+        if (key === "auto_interval_min") return dynamicEndpoint(entity).read(CLUSTER, ["autoIntervalMin"]);
+        if (key === "timezone_hours") return dynamicEndpoint(entity).read(CLUSTER, ["timezoneMin"]);
 
         const match = /^program_(mon|tue|wed|thu|fri|sat|sun)_(enabled|start|end|interval_min)$/.exec(key);
         if (match) {
@@ -288,7 +299,7 @@ const tzAirwick: Tz.Converter = {
                       : field === "end"
                         ? `program${n}EndMin`
                         : `program${n}IntervalMin`;
-            await entity.read(CLUSTER, [attr]);
+            await dynamicEndpoint(entity).read(CLUSTER, [attr]);
         }
     },
 };
@@ -314,7 +325,7 @@ const readOnlyGet: Tz.Converter = {
             battery_v: "batteryMv",
             battery: "batteryMv",
         };
-        await entity.read(CLUSTER, [map[key]]);
+        await dynamicEndpoint(entity).read(CLUSTER, [map[key]]);
     },
 };
 
@@ -397,25 +408,25 @@ async function syncClock(device: Zh.Device): Promise<void> {
     if (!endpoint) throw new Error(`AirWick endpoint ${ENDPOINT} not found`);
 
     const now = Math.floor(Date.now() / 1000) - ZIGBEE_EPOCH_UNIX;
-    if (now > 0) await endpoint.write(CLUSTER, {syncTime: now});
+    if (now > 0) await dynamicEndpoint(endpoint).write(CLUSTER, {syncTime: now});
 }
 
 async function configureReliableReporting(endpoint: Zh.Endpoint): Promise<void> {
     await retry(() =>
-        endpoint.configureReporting(CLUSTER, [{attribute: "mode", minimumReportInterval: 0, maximumReportInterval: 3600}]),
+        dynamicEndpoint(endpoint).configureReporting(CLUSTER, [{attribute: "mode", minimumReportInterval: 0, maximumReportInterval: 3600}]),
     );
     await retry(() =>
-        endpoint.configureReporting(CLUSTER, [{attribute: "timeValid", minimumReportInterval: 0, maximumReportInterval: 3600}]),
+        dynamicEndpoint(endpoint).configureReporting(CLUSTER, [{attribute: "timeValid", minimumReportInterval: 0, maximumReportInterval: 3600}]),
     );
     await retry(() =>
-        endpoint.configureReporting(CLUSTER, [
+        dynamicEndpoint(endpoint).configureReporting(CLUSTER, [
             {attribute: "batteryMv", minimumReportInterval: 30, maximumReportInterval: 3600, reportableChange: 10},
         ]),
     );
 
     for (const attribute of ["sprayCount", "lastSprayReason", "lastSprayTime", "nextSprayTime"]) {
         await retry(() =>
-            endpoint.configureReporting(CLUSTER, [{attribute, minimumReportInterval: 0, maximumReportInterval: 3600, reportableChange: 1}]),
+            dynamicEndpoint(endpoint).configureReporting(CLUSTER, [{attribute, minimumReportInterval: 0, maximumReportInterval: 3600, reportableChange: 1}]),
         );
     }
 
@@ -438,7 +449,7 @@ async function refreshState(device: Zh.Device): Promise<void> {
     }
 
     for (const attributes of chunks) {
-        await retry(() => endpoint.read(CLUSTER, attributes));
+        await retry(() => dynamicEndpoint(endpoint).read(CLUSTER, attributes));
         await delay(100);
     }
 
